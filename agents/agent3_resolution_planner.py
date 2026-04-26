@@ -1,10 +1,10 @@
 import os
 import json
-import google.generativeai as genai
+import sys
+from google import genai
 from dotenv import load_dotenv
 
 load_dotenv()
-genai.configure(api_key=os.environ["GEMINI_API_KEY"])
 
 PLANNING_PROMPT = """
 You are a principal engineer writing a production incident runbook for an on-call operator.
@@ -75,8 +75,21 @@ def run(agent1_output: dict, agent2_output: dict) -> dict:
         first_actions=", ".join(agent2_output["recommended_first_actions"])
     )
 
-    model = genai.GenerativeModel("gemini-2.5-flash")
-    response = model.generate_content(prompt)
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key or api_key == "AIzaSyDSwQefcHaNlPVACw5Vp710WqIivbayGpw":
+        print("\n[ERROR] Invalid or leaked GEMINI_API_KEY. Please replace the placeholder in your .env file with a valid Gemini API key.")
+        sys.exit(1)
+
+    try:
+        client = genai.Client(api_key=api_key)
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt
+        )
+    except Exception as e:
+        print(f"\n[ERROR] Failed to communicate with Gemini API: {e}")
+        print("Please check if your API key in the .env file is valid.")
+        sys.exit(1)
     
     raw = response.text.strip()
     if raw.startswith("```"):

@@ -1,0 +1,138 @@
+{
+  "research_context": {
+    "root_cause_received": "A database performance bottleneck, specifically slow queries, is causing the application's database connection pool to exhaust, leading to application unresponsiveness and failures.",
+    "keywords_used": [
+      "database connection pool exhaustion",
+      "slow query",
+      "nginx upstream timeout",
+      "connection refused"
+    ],
+    "urls_scraped": [
+      "https://www.postgresql.org/docs/current/runtime-config-connection.html",
+      "https://nginx.org/en/docs/http/ngx_http_upstream_module.html",
+      "https://www.pgbouncer.org/config.html"
+    ]
+  },
+  "solutions": [
+    {
+      "id": "sol_1",
+      "title": "Increase database connection pool size",
+      "description": "Raise the max_connections in PostgreSQL and the pool_size in your application's DB config (e.g., SQLAlchemy pool_size, Django CONN_MAX_AGE). This directly addresses pool exhaustion shown in app-error.log.",
+      "pros": [
+        "Immediately addresses the root cause (pool exhaustion)",
+        "Low-risk config change if DB server has headroom",
+        "Reversible with one config reload"
+      ],
+      "cons": [
+        "Each DB connection consumes ~5-10MB RAM on the server",
+        "Root cause of *why* pool grew may still exist (slow queries, leak)"
+      ],
+      "risk": "LOW",
+      "try_first": true,
+      "sources": [
+        {
+          "url": "https://www.postgresql.org/docs/current/runtime-config-connection.html",
+          "label": "PostgreSQL connection config docs",
+          "excerpt": "PostgreSQL: Documentation: 18: 19.3.\u00a0Connections and Authentication February 26, 2026: PostgreSQL 18.3, 17.9, 16.13, 15.17, and 14.22 Released! Documentation \u2192 PostgreSQL 18 Supported Versions: Current ( 18 )\n                        \n                      \n                         / 17 / 16 / 15 / 14 Development Versions: devel Unsupported versions: 13 / 12 / 11 / 10 / 9.6 / 9.5 / 9.4 / 9.3 / 9.2 "
+        },
+        {
+          "url": "https://nginx.org/en/docs/http/ngx_http_upstream_module.html",
+          "label": "nginx upstream module docs",
+          "excerpt": "Module ngx_http_upstream_module Planning your ingress-nginx migration? Start here: kubernetes.nginx.org . Module ngx_http_upstream_module Example Configuration Directives upstream server zone state hash ip_hash keepalive keepalive_requests keepalive_time keepalive_timeout ntlm least_conn least_time queue random resolver resolver_timeout sticky Embedded Variables The ngx_http_upstream_module module"
+        }
+      ]
+    },
+    {
+      "id": "sol_2",
+      "title": "Add a connection pooler (PgBouncer)",
+      "description": "Deploy PgBouncer in transaction-mode pooling between your app and PostgreSQL. It multiplexes many app connections onto fewer real DB connections.",
+      "pros": [
+        "Handles connection storms without changing DB max_connections",
+        "Industry-standard solution for high-connection PostgreSQL workloads",
+        "Reduces DB memory pressure significantly"
+      ],
+      "cons": [
+        "Requires deployment of a new component (ops overhead)",
+        "Transaction-mode breaks session-level features (SET, advisory locks)",
+        "Not instant \u2014 needs testing before production rollout"
+      ],
+      "risk": "MEDIUM",
+      "try_first": false,
+      "sources": [
+        {
+          "url": "https://www.postgresql.org/docs/current/runtime-config-connection.html",
+          "label": "PostgreSQL connection config docs",
+          "excerpt": "PostgreSQL: Documentation: 18: 19.3.\u00a0Connections and Authentication February 26, 2026: PostgreSQL 18.3, 17.9, 16.13, 15.17, and 14.22 Released! Documentation \u2192 PostgreSQL 18 Supported Versions: Current ( 18 )\n                        \n                      \n                         / 17 / 16 / 15 / 14 Development Versions: devel Unsupported versions: 13 / 12 / 11 / 10 / 9.6 / 9.5 / 9.4 / 9.3 / 9.2 "
+        },
+        {
+          "url": "https://nginx.org/en/docs/http/ngx_http_upstream_module.html",
+          "label": "nginx upstream module docs",
+          "excerpt": "Module ngx_http_upstream_module Planning your ingress-nginx migration? Start here: kubernetes.nginx.org . Module ngx_http_upstream_module Example Configuration Directives upstream server zone state hash ip_hash keepalive keepalive_requests keepalive_time keepalive_timeout ntlm least_conn least_time queue random resolver resolver_timeout sticky Embedded Variables The ngx_http_upstream_module module"
+        }
+      ]
+    },
+    {
+      "id": "sol_3",
+      "title": "Kill long-running/idle DB connections immediately",
+      "description": "Run: SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE state = 'idle' AND query_start < NOW() - INTERVAL '5 minutes'; This frees leaked connections right now without a restart.",
+      "pros": [
+        "Immediate relief \u2014 no restart required",
+        "Frees pool slots within seconds",
+        "Safe to run on production without downtime"
+      ],
+      "cons": [
+        "Symptom fix only \u2014 does not prevent recurrence",
+        "May abort in-progress transactions (check state carefully)"
+      ],
+      "risk": "LOW",
+      "try_first": true,
+      "sources": [
+        {
+          "url": "https://www.postgresql.org/docs/current/runtime-config-connection.html",
+          "label": "PostgreSQL connection config docs",
+          "excerpt": "PostgreSQL: Documentation: 18: 19.3.\u00a0Connections and Authentication February 26, 2026: PostgreSQL 18.3, 17.9, 16.13, 15.17, and 14.22 Released! Documentation \u2192 PostgreSQL 18 Supported Versions: Current ( 18 )\n                        \n                      \n                         / 17 / 16 / 15 / 14 Development Versions: devel Unsupported versions: 13 / 12 / 11 / 10 / 9.6 / 9.5 / 9.4 / 9.3 / 9.2 "
+        },
+        {
+          "url": "https://nginx.org/en/docs/http/ngx_http_upstream_module.html",
+          "label": "nginx upstream module docs",
+          "excerpt": "Module ngx_http_upstream_module Planning your ingress-nginx migration? Start here: kubernetes.nginx.org . Module ngx_http_upstream_module Example Configuration Directives upstream server zone state hash ip_hash keepalive keepalive_requests keepalive_time keepalive_timeout ntlm least_conn least_time queue random resolver resolver_timeout sticky Embedded Variables The ngx_http_upstream_module module"
+        }
+      ]
+    },
+    {
+      "id": "sol_4",
+      "title": "Restart the application service",
+      "description": "sudo systemctl restart your-app. Forces all app-side connections to close and the pool to reset.",
+      "pros": [
+        "Guaranteed pool reset",
+        "Simple to execute"
+      ],
+      "cons": [
+        "Causes brief outage (30s\u20132min depending on startup time)",
+        "Does not fix the root cause",
+        "Should not be attempted before trying sol_3"
+      ],
+      "risk": "HIGH",
+      "try_first": false,
+      "sources": [
+        {
+          "url": "https://www.postgresql.org/docs/current/runtime-config-connection.html",
+          "label": "PostgreSQL connection config docs",
+          "excerpt": "PostgreSQL: Documentation: 18: 19.3.\u00a0Connections and Authentication February 26, 2026: PostgreSQL 18.3, 17.9, 16.13, 15.17, and 14.22 Released! Documentation \u2192 PostgreSQL 18 Supported Versions: Current ( 18 )\n                        \n                      \n                         / 17 / 16 / 15 / 14 Development Versions: devel Unsupported versions: 13 / 12 / 11 / 10 / 9.6 / 9.5 / 9.4 / 9.3 / 9.2 "
+        },
+        {
+          "url": "https://nginx.org/en/docs/http/ngx_http_upstream_module.html",
+          "label": "nginx upstream module docs",
+          "excerpt": "Module ngx_http_upstream_module Planning your ingress-nginx migration? Start here: kubernetes.nginx.org . Module ngx_http_upstream_module Example Configuration Directives upstream server zone state hash ip_hash keepalive keepalive_requests keepalive_time keepalive_timeout ntlm least_conn least_time queue random resolver resolver_timeout sticky Embedded Variables The ngx_http_upstream_module module"
+        }
+      ]
+    }
+  ],
+  "risky_actions_flagged": [
+    "Restart the application service"
+  ],
+  "recommended_first_actions": [
+    "Increase database connection pool size",
+    "Kill long-running/idle DB connections immediately"
+  ]
+}
