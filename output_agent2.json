@@ -1,14 +1,14 @@
 {
   "research_context": {
-    "root_cause_received": "The application's database connection pool is exhausted due to slow and timing-out database queries, leading to the application becoming unresponsive and failing to serve requests.",
+    "root_cause_received": "A database performance bottleneck is causing slow queries and exhausting the application's database connection pool, leading to application timeouts and Nginx errors.",
     "keywords_used": [
-      "DB pool exhaustion",
-      "slow SQL query",
-      "database timeout",
-      "upstream timeout",
+      "database connection exhaustion",
+      "slow queries",
+      "DB query timeout",
+      "nginx upstream timed out",
+      "504 gateway timeout",
       "connection refused",
-      "application unresponsiveness",
-      "database performance"
+      "application performance"
     ],
     "urls_scraped": [
       "https://www.postgresql.org/docs/current/runtime-config-connection.html",
@@ -32,13 +32,7 @@
       ],
       "risk": "LOW",
       "try_first": true,
-      "sources": [
-        {
-          "url": "https://nginx.org/en/docs/http/ngx_http_upstream_module.html",
-          "label": "nginx upstream module docs",
-          "excerpt": "Module ngx_http_upstream_module Planning your ingress-nginx migration? Start here: kubernetes.nginx.org . Module ngx_http_upstream_module Example Configuration Directives upstream server zone state hash ip_hash keepalive keepalive_requests keepalive_time keepalive_timeout ntlm least_conn least_time queue random resolver resolver_timeout sticky Embedded Variables The ngx_http_upstream_module module"
-        }
-      ]
+      "sources": []
     },
     {
       "id": "sol_2",
@@ -56,13 +50,7 @@
       ],
       "risk": "MEDIUM",
       "try_first": false,
-      "sources": [
-        {
-          "url": "https://nginx.org/en/docs/http/ngx_http_upstream_module.html",
-          "label": "nginx upstream module docs",
-          "excerpt": "Module ngx_http_upstream_module Planning your ingress-nginx migration? Start here: kubernetes.nginx.org . Module ngx_http_upstream_module Example Configuration Directives upstream server zone state hash ip_hash keepalive keepalive_requests keepalive_time keepalive_timeout ntlm least_conn least_time queue random resolver resolver_timeout sticky Embedded Variables The ngx_http_upstream_module module"
-        }
-      ]
+      "sources": []
     },
     {
       "id": "sol_3",
@@ -79,13 +67,7 @@
       ],
       "risk": "LOW",
       "try_first": true,
-      "sources": [
-        {
-          "url": "https://nginx.org/en/docs/http/ngx_http_upstream_module.html",
-          "label": "nginx upstream module docs",
-          "excerpt": "Module ngx_http_upstream_module Planning your ingress-nginx migration? Start here: kubernetes.nginx.org . Module ngx_http_upstream_module Example Configuration Directives upstream server zone state hash ip_hash keepalive keepalive_requests keepalive_time keepalive_timeout ntlm least_conn least_time queue random resolver resolver_timeout sticky Embedded Variables The ngx_http_upstream_module module"
-        }
-      ]
+      "sources": []
     },
     {
       "id": "sol_4",
@@ -102,13 +84,7 @@
       ],
       "risk": "HIGH",
       "try_first": false,
-      "sources": [
-        {
-          "url": "https://nginx.org/en/docs/http/ngx_http_upstream_module.html",
-          "label": "nginx upstream module docs",
-          "excerpt": "Module ngx_http_upstream_module Planning your ingress-nginx migration? Start here: kubernetes.nginx.org . Module ngx_http_upstream_module Example Configuration Directives upstream server zone state hash ip_hash keepalive keepalive_requests keepalive_time keepalive_timeout ntlm least_conn least_time queue random resolver resolver_timeout sticky Embedded Variables The ngx_http_upstream_module module"
-        }
-      ]
+      "sources": []
     }
   ],
   "risky_actions_flagged": [
