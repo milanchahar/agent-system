@@ -1,0 +1,3 @@
+2026/04/26 10:01:05 [error] 12#12: *1 upstream timed out (110: Connection timed out) while reading response header from upstream, client: 192.168.1.10, server: api.example.com, request: "POST /api/login HTTP/1.1", upstream: "http://127.0.0.1:8080/api/login"
+2026/04/26 10:01:06 [error] 12#12: *2 connect() failed (111: Connection refused) while connecting to upstream, upstream: "http://127.0.0.1:8080/api/portfolio"
+2026/04/26 10:01:08 [error] 12#12: *3 upstream timed out (110: Connection timed out), upstream: "http://127.0.0.1:8080/api/login"

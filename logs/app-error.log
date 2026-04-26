@@ -1,0 +1,5 @@
+2026-04-26T10:00:55Z ERROR [db-pool] All connections exhausted. Pool size: 10/10. Queue: 47 waiting.
+2026-04-26T10:00:58Z ERROR [auth-service] DB query timeout after 5000ms: SELECT * FROM users WHERE email=?
+2026-04-26T10:01:02Z ERROR [portfolio-service] Failed to fetch portfolio: DB connection timeout
+2026-04-26T10:01:04Z WARN  [db-pool] Slow query detected: 4823ms — SELECT * FROM portfolio WHERE user_id=?
+2026-04-26T10:01:10Z ERROR [db-pool] Connection pool overflow. Dropping request.
