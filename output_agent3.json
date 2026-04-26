@@ -1,0 +1,49 @@
+{
+  "selected_solution": "Kill long-running/idle DB connections immediately",
+  "selection_rationale": "This solution provides the most immediate and safest relief for database connection pool exhaustion without requiring any application restarts or configuration changes. It directly addresses the symptom of an exhausted pool by freeing up inactive connections, allowing the application to process new requests. While a temporary measure, it buys critical time during an incident to restore service stability and allows for a more controlled approach to long-term fixes.",
+  "pre_checks": [
+    "Verify current application and Nginx error logs to confirm continued symptoms of DB connection exhaustion (e.g., 'All connections exhausted', 'DB query timeout', 'upstream timed out').",
+    "Check current database connection count using `SELECT count(*) FROM pg_stat_activity;` to ensure there are a significant number of active/idle connections.",
+    "Ensure you have appropriate database access and credentials (e.g., `psql` access) to run `pg_terminate_backend` on the production database."
+  ],
+  "remediation_steps": [
+    {
+      "step": 1,
+      "action": "SSH into the database server and connect to PostgreSQL:\n`ssh <db_server_ip>`\n`psql -U <db_user> -d <db_name>`",
+      "purpose": "To establish a direct command-line connection to the PostgreSQL database to perform administrative queries.",
+      "expected_output": "A successful connection, indicated by the PostgreSQL prompt (e.g., `db_name=#`)."
+    },
+    {
+      "step": 2,
+      "action": "Identify potentially problematic long-idle connections:\n`SELECT pid, usename, application_name, client_addr, state, query_start, now() - query_start AS duration FROM pg_stat_activity WHERE state = 'idle' AND query_start < NOW() - INTERVAL '5 minutes' ORDER BY duration DESC;`",
+      "purpose": "To list `idle` database connections that have been inactive for more than 5 minutes. This allows the operator to review which connections will be terminated before execution, minimizing the risk of affecting actively used sessions.",
+      "expected_output": "A table showing Process IDs (pid), usernames, application names, client addresses, state, start time, and duration for long-idle connections. If no such connections exist, the table will be empty."
+    },
+    {
+      "step": 3,
+      "action": "Terminate the identified long-idle connections:\n`SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE state = 'idle' AND query_start < NOW() - INTERVAL '5 minutes';`",
+      "purpose": "To force-close database connection slots held by sessions that have been inactive for more than 5 minutes, thereby freeing up resources in the connection pool.",
+      "expected_output": "A list of `pg_terminate_backend` results, typically `t` for each successfully terminated connection (indicating TRUE), or an empty set if no connections matched the criteria."
+    }
+  ],
+  "validation_checks": [
+    "Monitor application logs immediately for a significant decrease or complete cessation of 'All connections exhausted', 'DB query timeout', and 'Connection refused' errors.",
+    "Check the `pg_stat_activity` table again (`SELECT count(*) FROM pg_stat_activity;` and `SELECT state, count(*) FROM pg_stat_activity GROUP BY state;`) to verify a reduction in total connections, particularly in the 'idle' state.",
+    "Monitor application performance metrics (e.g., latency, error rates, throughput) on your dashboards. Look for a quick return to baseline or improvement towards acceptable levels for /api/login and /api/portfolio endpoints.",
+    "Perform functional checks by attempting to access critical application endpoints via a web browser or API client to ensure they respond correctly and quickly."
+  ],
+  "rollback_plan": "Since this action terminates existing connections, it is not directly 'roll-backable'. If terminating idle connections does not alleviate the issue, or if (unlikely for idle connections) it causes new problems or further instability, immediately cease further attempts to kill connections. Document observations and proceed to escalate the incident or move to the next recommended solution, such as increasing the application's connection pool size or restarting the application service (with appropriate risk assessment).",
+  "downtime_required": false,
+  "escalation_triggers": [
+    "If application or database symptoms (e.g., connection exhaustion errors, high latency) do not improve significantly within 5-10 minutes after terminating connections.",
+    "If the number of `active` or `waiting` database connections remains critically high, indicating the problem is with active slow queries rather than idle connections.",
+    "If the database itself becomes unresponsive or exhibits unexpected behavior after executing the termination command.",
+    "If the application experiences a complete crash or becomes entirely unreachable after performing the remediation steps."
+  ],
+  "post_incident_tasks": [
+    "Conduct a Root Cause Analysis (RCA) to determine why connections were becoming long-idle or why queries were slow, including investigating specific slow queries identified in logs.",
+    "Implement Solution 1 (Increase database connection pool size) in a controlled manner, testing thoroughly in a staging environment first, to provide more resilience against future connection spikes.",
+    "Evaluate the feasibility and benefits of deploying Solution 2 (Add a connection pooler like PgBouncer) as a long-term solution for robust connection management, especially for high-load scenarios.",
+    "Enhance monitoring and alerting for database connection pool utilization, long-running queries, and application-side connection metrics to detect similar issues earlier."
+  ]
+}
